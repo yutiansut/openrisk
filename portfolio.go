@@ -253,10 +253,12 @@ func RunUserPortfolios() map[int]map[string]interface{} {
 	for userId, accs := range UserIdAccs {
 		rpt := make(map[string]interface{})
 		out[userId] = rpt
+		portfolios := UserPortfolios[userId]
+		accs2 := accs
 		go func() {
 			defer wg.Done()
-			for _, p := range UserPortfolios[userId] {
-				usedAccs := getAccMatch(p.AccPatterns, accs)
+			for _, p := range portfolios {
+				usedAccs := getAccMatch(p.AccPatterns, accs2)
 				var positions []*Position
 				if len(usedAccs) > 0 {
 					for _, acc := range usedAccs {
