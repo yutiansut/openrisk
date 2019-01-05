@@ -31,7 +31,7 @@ type Security struct {
 	Type          string
 	Multiplier    float64
 	PrevClose     float64
-	Rate          float64
+	Rate          float64 // currency rate
 	Currency      string
 	Adv20         float64
 	MarketCap     float64
@@ -132,6 +132,7 @@ type Position struct {
 	SellValue       float64
 	Security        *Security
 	Acc             int
+	Target          float64
 }
 
 var Positions = make(map[int]map[int64]*Position)
@@ -361,6 +362,25 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 			ord.St = st
 			updatePos(ord)
 		}
+	}
+}
+
+func ParseTarget(msg []interface{}) {
+	acc := int(msg[1].(float64)) // msg[2] is acc name
+	for _, v := range Positions[acc] {
+		v.Target = 0.
+	}
+	if len(msg) < 4 {
+		return
+	}
+	if _, ok := msg[3].([]interface{}); !ok {
+		return
+	}
+	for _, v := range msg[3].([]interface{}) {
+		t := v.([]interface{})
+		securityId := int64(t[0].(float64))
+		target := t[1].(float64)
+		getPos(acc, securityId).Target = target
 	}
 }
 

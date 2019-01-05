@@ -280,6 +280,7 @@ func tradeServerJob(ch chan []interface{}, c *websocket.Conn) {
 			} else if action == "securities" {
 				log.Printf("%s", msg)
 				Request(Array{"bod"})
+				Request(Array{"target"})
 				Request(Array{"offline", 0})
 			} else if action == "bod" {
 				ParseBod(msg)
@@ -316,6 +317,8 @@ func tradeServerJob(ch chan []interface{}, c *websocket.Conn) {
 				// pass
 			} else if action == "market" {
 				// pass
+			} else if action == "target" {
+				ParseTarget(msg)
 			} else if action == "user_sub_account" {
 				ParseUserIdAcc(msg)
 			} else {

@@ -49,6 +49,7 @@ var pyBuyQty = python.PyString_FromString("BuyQty")
 var pySellQty = python.PyString_FromString("SellQty")
 var pyBuyValue = python.PyString_FromString("BuyValue")
 var pySellValue = python.PyString_FromString("SellValue")
+var pyTarget = python.PyString_FromString("Target")
 
 func (p *Position) ToPy() *python.PyObject {
 	out := python.PyDict_New()
@@ -94,6 +95,7 @@ func (p *Position) ToPy() *python.PyObject {
 	python.PyDict_SetItem(out, pySellQty, python.PyFloat_FromDouble(p.SellQty))
 	python.PyDict_SetItem(out, pyBuyValue, python.PyFloat_FromDouble(p.BuyValue))
 	python.PyDict_SetItem(out, pySellValue, python.PyFloat_FromDouble(p.SellValue))
+	python.PyDict_SetItem(out, pyTarget, python.PyFloat_FromDouble(p.Target))
 
 	return out
 }
