@@ -3,6 +3,12 @@ Open source post-trade risk management system
 
 [Demo](http://demo.opentradesolutions.com/#/risk)
 
+---
+
+[![OpenRisk](https://github.com/opentradesolutions/openrisk/blob/master/screencapture.png)](https://raw.githubusercontent.com/opentradesolutions/openrisk/master/screencapture.png)
+
+---
+
 # Steps to run
 Make sure opentrade is running, openrisk connects to opentrade and share its frontend
 ```bash
