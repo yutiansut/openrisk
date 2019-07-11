@@ -200,6 +200,7 @@ func newRiskDef(s *IniSection, path string) (r *RiskDef, eres error) {
 
 func (self *RiskDef) Run(positions []*Position) interface{} {
 	grouped := make(map[string][]*Position)
+	var gnames []string // for making order stable when showing on gui
 	if len(self.Groups) > 0 {
 		for i, expr := range self.Groups {
 			e, eok := expr.(*Expression)
@@ -239,6 +240,9 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 					}
 				}
 				if tmp != "" {
+					if grouped[tmp] == nil {
+						gnames = append(gnames, tmp)
+					}
 					grouped[tmp] = append(grouped[tmp], p)
 				}
 			}
@@ -248,11 +252,13 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 		}
 	} else {
 		grouped[""] = positions
+		gnames = append(gnames, "")
 	}
 	rpt := make(map[string]interface{})
 	for _, rp := range self.Params {
 		var out []interface{}
-		for gname, positions := range grouped {
+		for _, gname := range gnames {
+			positions := grouped[gname]
 			if len(positions) > 0 {
 				out = append(out, []interface{}{gname, rp.Run(gname, positions)})
 			}
