@@ -203,6 +203,7 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 	var gnames []string // for making order stable when showing on gui
 	if len(self.Groups) > 0 {
 		for i, expr := range self.Groups {
+			var subGroupNames []string
 			e, eok := expr.(*Expression)
 			for _, p := range positions {
 				if self.Filter != nil {
@@ -241,13 +242,19 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 				}
 				if tmp != "" {
 					if grouped[tmp] == nil {
-						gnames = append(gnames, tmp)
+						subGroupNames = append(subGroupNames, tmp)
 					}
 					grouped[tmp] = append(grouped[tmp], p)
 				}
 			}
 			if len(self.GroupNames) > i {
 				expr = self.GroupNames[i]
+			}
+			if subGroupNames != nil {
+				sort.Strings(subGroupNames)
+				for _, name := range subGroupNames {
+					gnames = append(gnames, name)
+				}
 			}
 		}
 	} else {
