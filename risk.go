@@ -44,8 +44,9 @@ type RiskParamDef struct {
 	Parent     *RiskDef
 	Name       string
 	Formula    *Expression
-	UpperBound float64
-	LowerBound float64
+	UpperBound []float64
+	LowerBound []float64
+	TradeStop  bool
 	Window     WindowDef
 	Variables  []NameExpression
 	Graph      bool
@@ -76,10 +77,8 @@ func split(s string, pattern string) []string {
 func newRiskParamDef(s *IniSection, parent *RiskDef) (r *RiskParamDef, eres error) {
 	f := s.ValueMap["formula"]
 	r = &RiskParamDef{
-		Parent:     parent,
-		Name:       s.Name,
-		UpperBound: math.NaN(),
-		LowerBound: math.NaN(),
+		Parent: parent,
+		Name:   s.Name,
 	}
 	var params map[string]interface{}
 	variables := s.SectionMap["var"]
@@ -112,16 +111,26 @@ func newRiskParamDef(s *IniSection, parent *RiskDef) (r *RiskParamDef, eres erro
 	if len(w) > 1 {
 		r.Window.Type = w[1]
 	}
-	str := s.ValueMap["upper_bound"][0]
-	if str != "" {
-		if v, err := strconv.ParseFloat(str, 64); err == nil {
-			r.UpperBound = v
+	strs := split(s.ValueMap["upper_bound"][0], ",")
+	for _, str := range strs {
+		v := math.NaN()
+		if v2, err := strconv.ParseFloat(str, 64); err == nil {
+			v = v2
 		}
+		r.UpperBound = append(r.UpperBound, v)
 	}
-	str = s.ValueMap["lower_bound"][0]
+	strs = split(s.ValueMap["lower_bound"][0], ",")
+	for _, str := range strs {
+		v := math.NaN()
+		if v2, err := strconv.ParseFloat(str, 64); err == nil {
+			v = v2
+		}
+		r.LowerBound = append(r.LowerBound, v)
+	}
+	str := s.ValueMap["trade_stop"][0]
 	if str != "" {
-		if v, err := strconv.ParseFloat(str, 64); err == nil {
-			r.LowerBound = v
+		if v, err := strconv.ParseBool(str); err == nil {
+			r.TradeStop = v
 		}
 	}
 	str = strings.ToLower(s.ValueMap["graph"][0])
@@ -201,8 +210,9 @@ func newRiskDef(s *IniSection, path string) (r *RiskDef, eres error) {
 func (self *RiskDef) Run(positions []*Position) interface{} {
 	grouped := make(map[string][]*Position)
 	var gnames []string // for making order stable when showing on gui
+	igroupMap := make(map[string]int)
 	if len(self.Groups) > 0 {
-		for i, expr := range self.Groups {
+		for igroup, expr := range self.Groups {
 			var subGroupNames []string
 			e, eok := expr.(*Expression)
 			for _, p := range positions {
@@ -219,7 +229,7 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 					v, _ := Evaluate(e, p)
 					if v2, ok2 := v.(bool); ok2 {
 						if v2 {
-							tmp = self.GroupNames[i]
+							tmp = self.GroupNames[igroup]
 						}
 					}
 				} else {
@@ -243,12 +253,13 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 				if tmp != "" {
 					if grouped[tmp] == nil {
 						subGroupNames = append(subGroupNames, tmp)
+						igroupMap[tmp] = igroup
 					}
 					grouped[tmp] = append(grouped[tmp], p)
 				}
 			}
-			if len(self.GroupNames) > i {
-				expr = self.GroupNames[i]
+			if len(self.GroupNames) > igroup {
+				expr = self.GroupNames[igroup]
 			}
 			if subGroupNames != nil {
 				sort.Strings(subGroupNames)
@@ -267,7 +278,46 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 		for _, gname := range gnames {
 			positions := grouped[gname]
 			if len(positions) > 0 {
-				out = append(out, []interface{}{gname, rp.Run(gname, positions)})
+				value := rp.Run(gname, positions)
+				var breach []interface{}
+				floatValue := math.NaN()
+				if tmpValue, ok := value.(float64); !ok {
+					floatValue = tmpValue
+				}
+				igroup := igroupMap[gname]
+				lowerBound := math.NaN()
+				if len(rp.LowerBound) > 0 {
+					if igroup >= len(rp.LowerBound) {
+						lowerBound = rp.LowerBound[len(rp.LowerBound)-1]
+					} else {
+						lowerBound = rp.LowerBound[igroup]
+					}
+				}
+				if floatValue < lowerBound {
+					breach = append(breach, -1)
+				}
+				if breach == nil {
+					upperBound := math.NaN()
+					if len(rp.UpperBound) > 0 {
+						if igroup >= len(rp.UpperBound) {
+							upperBound = rp.UpperBound[len(rp.UpperBound)-1]
+						} else {
+							upperBound = rp.UpperBound[igroup]
+						}
+					}
+					if floatValue > upperBound {
+						breach = append(breach, 1)
+					}
+				}
+				if breach == nil {
+					out = append(out, []interface{}{gname, value})
+				} else {
+					if rp.TradeStop {
+						// to-do: send acc disable to opentrade
+						breach = append(breach, true)
+					}
+					out = append(out, []interface{}{gname, value, breach})
+				}
 			}
 		}
 		if len(out) > 0 {
