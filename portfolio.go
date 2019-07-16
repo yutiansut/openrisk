@@ -70,11 +70,11 @@ func ParseUserIdAcc(msg []interface{}) {
 	parsePortfolios(userId)
 }
 
-func (p *Portfolio) Run(positions []*Position) map[string]interface{} {
+func (p *Portfolio) Run(positions []*Position, userId int) map[string]interface{} {
 	rpt := make(map[string]interface{})
 	for _, riskDef := range p.RiskDefs {
 		name := riskDef.DisplayName
-		tmp := riskDef.Run(positions)
+		tmp := riskDef.Run(positions, p.Name, userId)
 		if tmp != nil {
 			rpt[name] = tmp
 		}
@@ -277,7 +277,7 @@ func RunUserPortfolios() map[int]map[string]interface{} {
 					}
 				}
 				if len(positions) > 0 {
-					rpt[p.Name] = p.Run(positions)
+					rpt[p.Name] = p.Run(positions, userId)
 				}
 			}
 		}()

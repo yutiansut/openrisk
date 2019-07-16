@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/thoas/go-funk"
 	"log"
 	"math"
@@ -207,7 +208,8 @@ func newRiskDef(s *IniSection, path string) (r *RiskDef, eres error) {
 	return
 }
 
-func (self *RiskDef) Run(positions []*Position) interface{} {
+func (self *RiskDef) Run(positions []*Position, portfolioName string, userId int) interface{} {
+	tradeStops := make(map[int]string)
 	grouped := make(map[string][]*Position)
 	var gnames []string // for making order stable when showing on gui
 	igroupMap := make(map[string]int)
@@ -279,11 +281,6 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 			positions := grouped[gname]
 			if len(positions) > 0 {
 				value := rp.Run(gname, positions)
-				var breach []interface{}
-				floatValue := math.NaN()
-				if tmpValue, ok := value.(float64); !ok {
-					floatValue = tmpValue
-				}
 				igroup := igroupMap[gname]
 				lowerBound := math.NaN()
 				if len(rp.LowerBound) > 0 {
@@ -293,32 +290,58 @@ func (self *RiskDef) Run(positions []*Position) interface{} {
 						lowerBound = rp.LowerBound[igroup]
 					}
 				}
-				if floatValue < lowerBound {
-					breach = append(breach, -1)
-				}
-				if breach == nil {
-					upperBound := math.NaN()
-					if len(rp.UpperBound) > 0 {
-						if igroup >= len(rp.UpperBound) {
-							upperBound = rp.UpperBound[len(rp.UpperBound)-1]
-						} else {
-							upperBound = rp.UpperBound[igroup]
-						}
+				upperBound := math.NaN()
+				if len(rp.UpperBound) > 0 {
+					if igroup >= len(rp.UpperBound) {
+						upperBound = rp.UpperBound[len(rp.UpperBound)-1]
+					} else {
+						upperBound = rp.UpperBound[igroup]
 					}
-					if floatValue > upperBound {
+				}
+				if floatValue, ok := value.(float64); ok {
+					var breach []interface{}
+					if floatValue < lowerBound {
+						breach = append(breach, -1)
+					} else if floatValue > upperBound {
 						breach = append(breach, 1)
 					}
-				}
-				if breach == nil {
-					out = append(out, []interface{}{gname, value})
-				} else {
-					if rp.TradeStop {
-						// to-do: send acc disable to opentrade
-						breach = append(breach, true)
+					if breach != nil {
+						if rp.TradeStop {
+							reason := fmt.Sprintf("OpenRisk: %d '%s' '%s' '%s' '%s' value %f out of range [%f, %f]", userId, portfolioName, self.Name, rp.Name, gname, floatValue, lowerBound, upperBound)
+							for _, pos := range positions {
+								tradeStops[pos.Acc] = reason
+							}
+							breach = append(breach, true)
+						}
+						out = append(out, []interface{}{gname, value, breach})
+						continue
 					}
-					out = append(out, []interface{}{gname, value, breach})
+				} else if array, ok := value.([][2]interface{}); ok {
+					var newArray []interface{}
+					for _, item := range array {
+						if floatValue, ok := item[1].(float64); ok {
+							var breach []interface{}
+							if floatValue < lowerBound {
+								breach = append(breach, -1)
+							} else if floatValue > upperBound {
+								breach = append(breach, 1)
+							}
+							// non-aggregate not support trade stop yet
+							if breach != nil {
+								newArray = append(newArray, []interface{}{item[0], item[1], breach})
+								continue
+							}
+						}
+						newArray = append(newArray, item)
+					}
+					value = newArray
 				}
+				out = append(out, []interface{}{gname, value})
 			}
+		}
+		for acc, reason := range tradeStops {
+			fmt.Print(acc, reason)
+			Request(Array{"admin", "sub accounts", "disable", acc, reason})
 		}
 		if len(out) > 0 {
 			if len(self.Params) == 1 {
