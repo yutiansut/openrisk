@@ -300,10 +300,9 @@ func (self *RiskDef) Run(positions []*Position, portfolioName string, userId int
 				}
 				if floatValue, ok := value.(float64); ok {
 					var breach []interface{}
-					if floatValue < lowerBound {
-						breach = append(breach, -1)
-					} else if floatValue > upperBound {
-						breach = append(breach, 1)
+					if floatValue < lowerBound || floatValue > upperBound {
+						breach = append(breach, convertNaN(lowerBound))
+						breach = append(breach, convertNaN(upperBound))
 					}
 					if breach != nil {
 						if rp.TradeStop {
@@ -321,10 +320,9 @@ func (self *RiskDef) Run(positions []*Position, portfolioName string, userId int
 					for _, item := range array {
 						if floatValue, ok := item[1].(float64); ok {
 							var breach []interface{}
-							if floatValue < lowerBound {
-								breach = append(breach, -1)
-							} else if floatValue > upperBound {
-								breach = append(breach, 1)
+							if floatValue < lowerBound || floatValue > upperBound {
+								breach = append(breach, convertNaN(lowerBound))
+								breach = append(breach, convertNaN(upperBound))
 							}
 							// non-aggregate not support trade stop yet
 							if breach != nil {
@@ -390,6 +388,14 @@ func std(nums []float64) float64 {
 	return sd
 }
 
+func convertNaN(value float64) interface{} {
+	if math.IsNaN(value) {
+		// json Marshal failed to work with NaN, so change to string
+		return "NaN"
+	}
+	return value
+}
+
 func (self *RiskParamDef) evaluate(positions []*Position, params map[string]interface{}, optional ...*Expression) interface{} {
 	var e *Expression
 	var isFormula bool
@@ -452,11 +458,7 @@ func (self *RiskParamDef) evaluate(positions []*Position, params map[string]inte
 		}
 		return tmp
 	}
-	if math.IsNaN(value) {
-		// json Marshal failed to work with NaN, so change to string
-		return "NaN"
-	}
-	return value
+	return convertNaN(value)
 }
 
 func (self *RiskParamDef) Run(gname string, positions []*Position) interface{} {
