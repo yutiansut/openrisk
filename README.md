@@ -13,7 +13,7 @@ Open source post-trade risk management system
 
 ---
 
-[![OpenRisk](https://github.com/opentradesolutions/openrisk/blob/master/screencapture.png)](https://raw.githubusercontent.com/opentradesolutions/openrisk/master/screencapture.png)
+[![OpenRisk](https://github.com/opentradesolutions/openrisk/blob/master/image.png)](https://raw.githubusercontent.com/opentradesolutions/openrisk/master/image.png)
 
 ---
 
