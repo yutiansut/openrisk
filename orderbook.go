@@ -29,6 +29,7 @@ type Security struct {
 	Isin          string
 	Market        string
 	Type          string
+	LotSize       float64
 	Multiplier    float64
 	PrevClose     float64
 	Rate          float64 // currency rate
@@ -59,21 +60,22 @@ func ParseSecurity(msg []interface{}) {
 		Symbol:        msg[2].(string),
 		Market:        msg[3].(string),
 		Type:          msg[4].(string),
-		Multiplier:    msg[5].(float64),
-		PrevClose:     msg[6].(float64),
+		LotSize:       msg[5].(float64),
+		Multiplier:    msg[6].(float64),
 		Rate:          msg[7].(float64),
-		Currency:      msg[8].(string),
-		Adv20:         msg[9].(float64),
-		MarketCap:     msg[10].(float64),
-		Sector:        msg[11].(string),
-		IndustryGroup: msg[12].(string),
-		Industry:      msg[13].(string),
-		SubIndustry:   msg[14].(string),
-		LocalSymbol:   msg[15].(string),
-		Bbgid:         msg[16].(string),
-		Cusip:         msg[17].(string),
-		Sedol:         msg[18].(string),
-		Isin:          msg[19].(string),
+		PrevClose:     msg[8].(float64),
+		Currency:      msg[9].(string),
+		LocalSymbol:   msg[10].(string),
+		Adv20:         msg[11].(float64),
+		MarketCap:     msg[12].(float64),
+		Sector:        msg[13].(string),
+		IndustryGroup: msg[14].(string),
+		Industry:      msg[15].(string),
+		SubIndustry:   msg[16].(string),
+		Bbgid:         msg[17].(string),
+		Cusip:         msg[18].(string),
+		Sedol:         msg[19].(string),
+		Isin:          msg[20].(string),
 	}
 	if sec.Market == "CURRENCY" {
 		sec.Market = "FX"
