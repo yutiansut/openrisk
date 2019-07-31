@@ -86,7 +86,13 @@ func ParseSecurity(msg []interface{}) {
 	if sec.Rate <= 0 {
 		sec.Rate = 1
 	}
-	SecurityMapById[sec.Id] = sec
+	sec0 := SecurityMapById[sec.Id]
+	if sec0 == nil {
+		SecurityMapById[sec.Id] = sec
+	} else {
+		*sec0 = *sec
+		sec = sec0
+	}
 	tmp := SecurityMapByMarket[sec.Market]
 	if tmp == nil {
 		tmp = make(map[string]*Security)
