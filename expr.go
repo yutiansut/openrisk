@@ -102,8 +102,10 @@ func ParseExpr(ln string, expr string, name string, params map[string]interface{
 		a = "std"
 		expr = expr[4 : len(expr)-1]
 	} else if strings.HasPrefix(expr, "top(") {
-		fields := split(expr, ",)")
+		expr = expr[4 : len(expr)-1]
+		fields := split(expr, ",")
 		if len(fields) > 1 {
+			expr = fields[0]
 			i, err := strconv.Atoi(fields[len(fields)-1])
 			if err != nil {
 				eres = fmt.Errorf("invalid top expression on line " + ln + ": " + expr + ": missing valid second parameter")
