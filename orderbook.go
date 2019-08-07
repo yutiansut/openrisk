@@ -230,6 +230,9 @@ func updatePos(ord *Order) {
 			p.AvgPx = (qty0*p.AvgPx + qty*px) / (qty0 + qty)
 		}
 		p.Qty += qty
+		if p.Qty == 0 {
+			p.AvgPx = 0
+		}
 
 	default:
 		*outstand -= ord.Qty - ord.CumQty

@@ -226,6 +226,8 @@ func Evaluate(e *Expression, p *Position, optional ...map[string]interface{}) (i
 	params["BuyValue"] = p.BuyValue
 	params["SellValue"] = p.SellValue
 	params["Pos0"] = p.Bod.Qty
+	params["AvgPx0"] = p.Bod.AvgPx
+	params["RealizedPnl0"] = p.Bod.RealizedPnl
 	params["Target"] = p.Target
 	params["NaN"] = math.NaN()
 	return e.E.Evaluate(params)
