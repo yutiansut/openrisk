@@ -282,8 +282,13 @@ func tradeServerJob(ch chan []interface{}, c *websocket.Conn) {
 				Request(Array{"bod"})
 				Request(Array{"target"})
 				Request(Array{"offline", 0})
+				Request(Array{"pnl"})
 			} else if action == "bod" {
 				ParseBod(msg)
+			} else if action == "Pnl" {
+				// pass
+			} else if action == "pnl" {
+				ParsePnl(msg)
 			} else if action == "offline" {
 				ParseOffline(msg)
 			} else if action == "Order" {

@@ -126,6 +126,7 @@ var orders = make(map[int64]*Order)
 type PositionBase struct {
 	Qty         float64
 	AvgPx       float64
+	Commission  float64
 	RealizedPnl float64
 }
 
@@ -400,16 +401,29 @@ func ParseBod(msg []interface{}) {
 	securityId := int64(msg[2].(float64))
 	qty := msg[3].(float64)
 	avgPx := msg[4].(float64)
-	realizedPnl := msg[5].(float64)
-	// brokerAcc := int(msg[4])
-	// tm := int64(msg[5].(float64))
+	commission := msg[5].(float64)
+	realizedPnl := msg[6].(float64)
+	// brokerAcc := int(msg[7])
+	// tm := int64(msg[8].(float64))
 	p := getPos(acc, securityId)
 	p.Qty = qty
 	p.AvgPx = avgPx
+	p.Commission = commission
 	p.RealizedPnl = realizedPnl
 	p.Bod.Qty = qty
 	p.Bod.AvgPx = avgPx
+	p.Bod.Commission = commission
 	p.Bod.RealizedPnl = realizedPnl
+}
+
+func ParsePnl(msg []interface{}) {
+	acc := int(msg[1].(float64))
+	securityId := int64(msg[2].(float64))
+	p := getPos(acc, securityId)
+	// ignore unrealizedPnl and realizedPnl which we can deduce ourself
+	if len(msg) > 4 {
+		p.Commission = msg[4].(float64)
+	}
 }
 
 func ParseMd(msg []interface{}) {
