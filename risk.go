@@ -407,7 +407,7 @@ func (self *RiskParamDef) evaluate(positions []*Position, params map[string]inte
 		if e.A == "" {
 			// by default, only return top 10 result
 			e.A = "top"
-			e.N = 10
+			e.N = [2]int{10, 0}
 		}
 	}
 	if e.A == "call" {
@@ -445,18 +445,19 @@ func (self *RiskParamDef) evaluate(positions []*Position, params map[string]inte
 			tmp = append(tmp, [2]interface{}{p.Security.Symbol, res[i]})
 		}
 		// will optimize with nth_element
-		n := 0
-		if e.N > 0 {
-			sort.Slice(tmp, func(i, j int) bool { return tmp[i][1].(float64) > tmp[j][1].(float64) })
-			n = e.N
-		} else if e.N < 0 {
-			sort.Slice(tmp, func(i, j int) bool { return tmp[i][1].(float64) < tmp[j][1].(float64) })
-			n = -e.N
+		var out [][2]interface{}
+		for _, n := range e.N {
+			if n > 0 {
+				sort.Slice(tmp, func(i, j int) bool { return tmp[i][1].(float64) > tmp[j][1].(float64) })
+			} else if n < 0 {
+				sort.Slice(tmp, func(i, j int) bool { return tmp[i][1].(float64) < tmp[j][1].(float64) })
+				n = -n
+			}
+			if n < len(tmp) {
+				out = append(out, tmp[:n]...)
+			}
 		}
-		if n < len(tmp) {
-			tmp = tmp[:n]
-		}
-		return tmp
+		return out
 	}
 	return convertNaN(value)
 }

@@ -12,7 +12,7 @@ import (
 type Expression struct {
 	E *govaluate.EvaluableExpression
 	A string    // aggregate function name
-	N int       // for A == "top"
+	N [2]int    // for A == "top"
 	C [3]string // for call()
 }
 
@@ -88,7 +88,7 @@ var predefinedFunctions = map[string]govaluate.ExpressionFunction{
 
 func ParseExpr(ln string, expr string, name string, params map[string]interface{}, valueTmpl interface{}, path string) (res *Expression, eres error) {
 	var a string
-	var n int
+	var n [2]int
 	if strings.HasPrefix(expr, "sum(") {
 		a = "sum"
 		expr = expr[4 : len(expr)-1]
@@ -108,13 +108,23 @@ func ParseExpr(ln string, expr string, name string, params map[string]interface{
 			expr = fields[0]
 			i, err := strconv.Atoi(fields[len(fields)-1])
 			if err != nil {
-				eres = fmt.Errorf("invalid top expression on line " + ln + ": " + expr + ": missing valid second parameter")
+				eres = fmt.Errorf("invalid top expression on line " + ln + ": " + expr + ": bad top length")
 				return
 			}
 			a = "top"
-			n = i
+			n[1] = i
+			if len(fields) > 2 {
+				i, err := strconv.Atoi(fields[len(fields)-2])
+				if err != nil {
+					eres = fmt.Errorf("invalid top expression on line " + ln + ": " + expr + ": bad top length")
+					return
+				}
+				if n[1]*i < 0 {
+					n[0] = i
+				}
+			}
 		} else {
-			eres = fmt.Errorf("invalid top expression on line " + ln + ": " + expr + ": missing second parameter")
+			eres = fmt.Errorf("invalid top expression on line " + ln + ": " + expr + ": missing top length")
 			return
 		}
 	} else if strings.HasPrefix(expr, "call(") {
