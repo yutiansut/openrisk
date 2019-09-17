@@ -332,7 +332,7 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 		} else {
 			log.Println("not found order for", clOrdId)
 		}
-	case "cancelled":
+	case "canceled":
 	case "expired":
 	case "done_for_day":
 	case "calculated":
