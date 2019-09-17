@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"strings"
 )
 
@@ -177,7 +178,7 @@ func isLive(st string) bool {
 		return true
 	}
 	st = strings.ToLower(st)
-	return strings.HasPrefix(st, "pending") || strings.HasPrefix(st, "unconfirmed") || strings.HasPrefix(st, "partial") || st == "new"
+	return strings.HasPrefix(st, "pending") || strings.HasPrefix(st, "unconfirmed") || strings.HasPrefix(st, "partial") || st == "new" || st == "suspended"
 }
 
 func updatePos(ord *Order) {
@@ -315,6 +316,7 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 		if ord != nil {
 			ord.AvgPx = (ord.CumQty*ord.AvgPx + qty*px) / (ord.CumQty + qty)
 			ord.CumQty += qty
+			ord.CumQty = math.Round(ord.CumQty*1e6) / 1e6
 			if ord.CumQty > ord.Qty {
 				log.Printf("overfill found: %s", msg)
 			}
@@ -331,6 +333,9 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 			log.Println("not found order for", clOrdId)
 		}
 	case "cancelled":
+	case "expired":
+	case "done_for_day":
+	case "calculated":
 		ord := orders[clOrdId]
 		if ord != nil {
 			st0 := ord.St
@@ -341,7 +346,7 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 		} else {
 			log.Println("can not find order for", clOrdId)
 		}
-	case "new", "replaced":
+	case "new", "pending", "replaced", "suspended":
 		ord := orders[clOrdId]
 		if ord != nil {
 			if st == "replaced" {
