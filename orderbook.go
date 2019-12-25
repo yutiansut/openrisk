@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"strings"
 )
 
@@ -62,9 +63,9 @@ func ParseSecurity(msg []interface{}) {
 		Type:          msg[4].(string),
 		LotSize:       msg[5].(float64),
 		Multiplier:    msg[6].(float64),
-		Rate:          msg[7].(float64),
-		PrevClose:     msg[8].(float64),
-		Currency:      msg[9].(string),
+		Currency:      msg[7].(string),
+		Rate:          msg[8].(float64),
+		PrevClose:     msg[9].(float64),
 		LocalSymbol:   msg[10].(string),
 		Adv20:         msg[11].(float64),
 		MarketCap:     msg[12].(float64),
@@ -177,7 +178,7 @@ func isLive(st string) bool {
 		return true
 	}
 	st = strings.ToLower(st)
-	return strings.HasPrefix(st, "pending") || strings.HasPrefix(st, "unconfirmed") || strings.HasPrefix(st, "partial") || st == "new"
+	return strings.HasPrefix(st, "pending") || strings.HasPrefix(st, "unconfirmed") || strings.HasPrefix(st, "partial") || st == "new" || st == "suspended"
 }
 
 func updatePos(ord *Order) {
@@ -315,6 +316,7 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 		if ord != nil {
 			ord.AvgPx = (ord.CumQty*ord.AvgPx + qty*px) / (ord.CumQty + qty)
 			ord.CumQty += qty
+			ord.CumQty = math.Round(ord.CumQty*1e6) / 1e6
 			if ord.CumQty > ord.Qty {
 				log.Printf("overfill found: %s", msg)
 			}
@@ -330,7 +332,11 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 		} else {
 			log.Println("not found order for", clOrdId)
 		}
+	case "canceled":
 	case "cancelled":
+	case "expired":
+	case "done_for_day":
+	case "calculated":
 		ord := orders[clOrdId]
 		if ord != nil {
 			st0 := ord.St
@@ -341,7 +347,7 @@ func ParseOrder(msg []interface{}, isOnline bool) {
 		} else {
 			log.Println("can not find order for", clOrdId)
 		}
-	case "new", "replaced":
+	case "new", "pending", "replaced", "suspended":
 		ord := orders[clOrdId]
 		if ord != nil {
 			if st == "replaced" {
